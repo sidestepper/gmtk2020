@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public sealed class GameController : MonoBehaviour {
     [SerializeField]
@@ -6,6 +7,11 @@ public sealed class GameController : MonoBehaviour {
 
     [SerializeField]
     private GameCamera _camera = null;
+    public GameCamera GameCamera {
+        get {
+            return _camera;
+        }
+    }
 
     private WindowListener[] _windowListeners = null;
     private DamageRegion[] _damageRegions = null;
@@ -33,10 +39,9 @@ public sealed class GameController : MonoBehaviour {
 
     public void PlayerLose() {
         if (!_gameOver) {
-            Debug.Log("GAME OVER");
             _gameOver = true;
             _fader.FadeToBlack(1f, () => {
-                Debug.Log("Done fading out, reload/restart");
+                SceneManager.LoadScene("GameOver");
             });
         }
     }

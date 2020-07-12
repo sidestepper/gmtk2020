@@ -27,6 +27,10 @@ public class GameCamera : MonoBehaviour
         _transform.eulerAngles = _angles;
     }
 
+    public void SetTarget(Transform target) {
+        _target = target;
+    }
+
     public void Shake(float duration, float intensity) {
         _shakeDuration = duration;
         _shakeIntensity = intensity;
