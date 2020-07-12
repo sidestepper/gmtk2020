@@ -13,6 +13,11 @@ public class PlayerController : MonoBehaviour, IPlayer, IAnimationEventHandler {
     [SerializeField]
     private Animator _animator = null;
 
+    [SerializeField]
+    private AudioSource _smashSource = null;
+
+    [SerializeField]
+    private AudioSource _hideSource = null;
 
     [SerializeField]
     private GameController _gameController = null;
@@ -28,6 +33,7 @@ public class PlayerController : MonoBehaviour, IPlayer, IAnimationEventHandler {
     private float _yAxis = 0f;
     private bool _moving = false;
     private float _smashCooldown = 0f;
+    private Duck _duck = null;
 
     public bool IsHiding { get; private set; }
     public bool IsSmashing { get; private set; }
@@ -40,36 +46,35 @@ public class PlayerController : MonoBehaviour, IPlayer, IAnimationEventHandler {
     }
 
     private void Update() {
-        if(IsDead) {
+        if (IsDead) {
             return;
         }
 
         _input.Poll(Time.deltaTime);
 
-        if(_smashCooldown > 0f) {
+        if (_smashCooldown > 0f) {
             _smashCooldown -= Time.deltaTime;
         }
 
-        if (_input.PrimaryActionDown && !IsHiding && _smashCooldown <= 0f) {
+        if (_input.PrimaryActionDown && !IsHiding && _smashCooldown <= 0f && _duck == null) {
             // Smash
             _animator.SetTrigger("smash");
-            _smashCooldown = 2f;
+            _smashCooldown = 1f;
             IsSmashing = true;
             StopMoving();
-            //_moving = false;
-            //_xAxis = _yAxis = 0f;
-            //_rigidbody.velocity = Vector3.zero;
             return;
         }
 
-        bool hiding = _input.SecondaryActionDown;
+        bool hiding = _input.SecondaryActionDown && _duck == null;
         if (IsHiding && !hiding) {
             IsHiding = false;
             _animator.SetTrigger("unhide");
+            _hideSource.Play();
             return;
-        } else if(!IsHiding && hiding) {
+        } else if (!IsHiding && hiding) {
             IsHiding = true;
             _animator.SetTrigger("hide");
+            _hideSource.Play();
             StopMoving();
             return;
         }
@@ -88,8 +93,6 @@ public class PlayerController : MonoBehaviour, IPlayer, IAnimationEventHandler {
                 _moving = true;
                 _animator.SetBool("moving", true);
             } else if (_moving) {
-                //_moving = false;
-                //_animator.SetBool("moving", false);
                 StopMoving();
             }
         }
@@ -132,17 +135,53 @@ public class PlayerController : MonoBehaviour, IPlayer, IAnimationEventHandler {
     public void HandleAnimationEvent(string eventName) {
         if (eventName == "SmashImpact") {
             SmashImpact();
-        } else if(eventName == "SmashDone") {
+        } else if (eventName == "SmashDone") {
             SmashDone();
         }
     }
 
     public void SmashImpact() {
+        _smashSource.Play();
         _gameController.PlayerSmashed(transform.position);
     }
 
     public void SmashDone() {
         IsSmashing = false;
+    }
+
+    public bool TryGetDuck(Duck duck) {
+        if (IsSmashing || IsHiding || IsDead || _duck != null) {
+            return false;
+        }
+
+        _animator.SetBool("grabbing", true);
+        _duck = duck;
+        return true;
+    }
+
+    public bool HasDuck() {
+        return _duck != null;
+    }
+
+    public void ThrowDuck(Vector3 target) {
+        if(_duck != null) {
+            
+            _duck.Throw((target - _duck.transform.position).normalized * 3f);
+            _animator.SetBool("grabbing", false);
+            _animator.SetTrigger("throw");
+
+            LerpUtility.Instance.TranslateTransform(
+                _duck.transform,
+                _duck.transform.position,
+                target,
+                0.25f,
+                () => {
+                    _duck.Die();
+                    _duck = null;
+                    _gameController.PlayerStruckEngine();
+                }
+            );
+        }
     }
 }
 
@@ -152,4 +191,7 @@ public interface IPlayer {
     bool IsSmashing { get; }
     bool IsDead { get; }
     void GotSpinned();
+    bool TryGetDuck(Duck duck);
+    bool HasDuck();
+    void ThrowDuck(Vector3 target);
 }

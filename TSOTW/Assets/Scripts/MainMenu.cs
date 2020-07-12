@@ -7,6 +7,14 @@ public class MainMenu : MonoBehaviour
         SceneManager.LoadScene("GameScene");
     }
 
+    public void ClickHowToPlay() {
+        SceneManager.LoadScene("HowtoPlay");
+    }
+
+    public void ClickOK() {
+        SceneManager.LoadScene("MainMenu");
+    }
+
     public void ClickQuit() {
         Application.Quit();
     }

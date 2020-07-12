@@ -22,13 +22,16 @@ public class DamageRegion : MonoBehaviour {
         }
     }
 
-    public void TryTakeDamage(Vector3 origin, Vector3 direction) {
+    public bool TryTakeDamage(Vector3 origin, Vector3 direction) {
         RaycastHit rchit;
         if (Physics.Raycast(origin, direction, out rchit, Mathf.Infinity, 1 << LayerMask.NameToLayer("DamageRegion"))) {
             if (rchit.collider == _collider) {
                 TakeDamage();
+                return true;
             }
         }
+
+        return false;
     }
 
     public void TakeDamage() {
